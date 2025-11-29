@@ -9,8 +9,7 @@ import os
 import math
 import sys
 
-import wasmer
-import wasmer_compiler_cranelift
+import wasmtime
 
 
 class Wasm:
@@ -20,30 +19,42 @@ class Wasm:
     """
 
     def __init__(self):
-        store = wasmer.Store(wasmer.engine.JIT(wasmer_compiler_cranelift.Compiler))
+        engine = wasmtime.Engine()
+        self._store = wasmtime.Store(engine)
         simpath = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
         wasmpath = os.path.join(simpath, "wasm", "ctx.wasm")
-        module = wasmer.Module(store, open(wasmpath, "rb").read())
-        wasi_version = wasmer.wasi.get_version(module, strict=False)
-        wasi_env = wasmer.wasi.StateBuilder("badge23sim").finalize()
-        import_object = wasi_env.generate_import_object(store, wasi_version)
-        instance = wasmer.Instance(module, import_object)
+        module = wasmtime.Module(engine, open(wasmpath, "rb").read())
+
+        # Configure WASI
+        wasi = wasmtime.WasiConfig()
+        wasi.argv = ["badge23sim"]
+        wasi.inherit_stdout()
+        wasi.inherit_stderr()
+        self._store.set_wasi(wasi)
+
+        # Create linker and instantiate module
+        linker = wasmtime.Linker(engine)
+        linker.define_wasi()
+        instance = linker.instantiate(self._store, module)
         self._i = instance
+        self._exports = instance.exports(self._store)
+        self._memory = self._exports["memory"]
 
     def malloc(self, n):
-        return self._i.exports.malloc(n)
+        return self._exports["malloc"](self._store, n)
 
     def free(self, p):
-        self._i.exports.free(p)
+        self._exports["free"](self._store, p)
 
     def ctx_parse(self, ctx, s):
         s = s.encode("utf-8")
         slen = len(s) + 1
         p = self.malloc(slen)
-        mem = self._i.exports.memory.uint8_view(p)
-        mem[0 : slen - 1] = s
-        mem[slen - 1] = 0
-        self._i.exports.ctx_parse(ctx, p)
+        mem_data = self._memory.data_ptr(self._store)
+        for i, byte in enumerate(s):
+            mem_data[p + i] = byte
+        mem_data[p + slen - 1] = 0
+        self._exports["ctx_parse"](self._store, ctx, p)
         self.free(p)
 
     def ctx_new_for_framebuffer(self, width, height, stride, format):
@@ -52,25 +63,26 @@ class Wasm:
         framebuffer and return it alongside the Ctx*.
         """
         fb = self.malloc(stride * height)
-        return fb, self._i.exports.ctx_new_for_framebuffer(
-            fb, width, height, stride, format
+        return fb, self._exports["ctx_new_for_framebuffer"](
+            self._store, fb, width, height, stride, format
         )
 
     def ctx_new_drawlist(self, width, height):
-        return self._i.exports.ctx_new_drawlist(width, height)
+        return self._exports["ctx_new_drawlist"](self._store, width, height)
 
     def ctx_apply_transform(self, ctx, *args):
         args = [float(a) for a in args]
-        return self._i.exports.ctx_apply_transform(ctx, *args)
+        return self._exports["ctx_apply_transform"](self._store, ctx, *args)
 
     def ctx_define_texture(self, ctx, eid, *args):
         s = eid.encode("utf-8")
         slen = len(s) + 1
         p = self.malloc(slen)
-        mem = self._i.exports.memory.uint8_view(p)
-        mem[0 : slen - 1] = s
-        mem[slen - 1] = 0
-        res = self._i.exports.ctx_define_texture(ctx, p, *args)
+        mem_data = self._memory.data_ptr(self._store)
+        for i, byte in enumerate(s):
+            mem_data[p + i] = byte
+        mem_data[p + slen - 1] = 0
+        res = self._exports["ctx_define_texture"](self._store, ctx, p, *args)
         self.free(p)
         return res
 
@@ -78,11 +90,12 @@ class Wasm:
         s = eid.encode("utf-8")
         slen = len(s) + 1
         p = self.malloc(slen)
-        mem = self._i.exports.memory.uint8_view(p)
-        mem[0 : slen - 1] = s
-        mem[slen - 1] = 0
+        mem_data = self._memory.data_ptr(self._store)
+        for i, byte in enumerate(s):
+            mem_data[p + i] = byte
+        mem_data[p + slen - 1] = 0
         args = [float(a) for a in args]
-        res = self._i.exports.ctx_draw_texture(ctx, p, *args)
+        res = self._exports["ctx_draw_texture"](self._store, ctx, p, *args)
         self.free(p)
         return res
 
@@ -90,55 +103,58 @@ class Wasm:
         s = text.encode("utf-8")
         slen = len(s) + 1
         p = self.malloc(slen)
-        mem = self._i.exports.memory.uint8_view(p)
-        mem[0 : slen - 1] = s
-        mem[slen - 1] = 0
-        res = self._i.exports.ctx_text_width(ctx, p)
+        mem_data = self._memory.data_ptr(self._store)
+        for i, byte in enumerate(s):
+            mem_data[p + i] = byte
+        mem_data[p + slen - 1] = 0
+        res = self._exports["ctx_text_width"](self._store, ctx, p)
         self.free(p)
         return res
 
     def ctx_x(self, ctx):
-        return self._i.exports.ctx_x(ctx)
+        return self._exports["ctx_x"](self._store, ctx)
 
     def ctx_y(self, ctx):
-        return self._i.exports.ctx_y(ctx)
+        return self._exports["ctx_y"](self._store, ctx)
 
     def ctx_logo(self, ctx, *args):
         args = [float(a) for a in args]
-        return self._i.exports.ctx_logo(ctx, *args)
+        return self._exports["ctx_logo"](self._store, ctx, *args)
 
     def ctx_destroy(self, ctx):
-        return self._i.exports.ctx_destroy(ctx)
+        return self._exports["ctx_destroy"](self._store, ctx)
 
     def ctx_render_ctx(self, ctx, dctx):
-        return self._i.exports.ctx_render_ctx(ctx, dctx)
+        return self._exports["ctx_render_ctx"](self._store, ctx, dctx)
 
     def stbi_load_from_memory(self, buf):
+        import struct
         p = self.malloc(len(buf))
-        mem = self._i.exports.memory.uint8_view(p)
-        mem[0 : len(buf)] = buf
+        mem_data = self._memory.data_ptr(self._store)
+        for i, byte in enumerate(buf):
+            mem_data[p + i] = byte
         wh = self.malloc(4 * 3)
-        res = self._i.exports.stbi_load_from_memory(p, len(buf), wh, wh + 4, wh + 8, 4)
-        whmem = self._i.exports.memory.uint32_view(wh // 4)
-        r = (res, whmem[0], whmem[1], whmem[2])
+        res = self._exports["stbi_load_from_memory"](self._store, p, len(buf), wh, wh + 4, wh + 8, 4)
+
+        # Read width, height, components as uint32
+        w = struct.unpack('<I', bytes(mem_data[wh:wh+4]))[0]
+        h = struct.unpack('<I', bytes(mem_data[wh+4:wh+8]))[0]
+        c = struct.unpack('<I', bytes(mem_data[wh+8:wh+12]))[0]
+        r = (res, w, h, c)
         self.free(p)
         self.free(wh)
 
         res, w, h, c = r
-        b = self._i.exports.memory.uint8_view(res)
         if c == 3:
             return r
+        # Premultiply alpha for RGBA images
         for j in range(h):
             for i in range(w):
-                b[i * 4 + j * w * 4 + 0] = int(
-                    b[i * 4 + j * w * 4 + 0] * b[i * 4 + j * w * 4 + 3] / 255
-                )
-                b[i * 4 + j * w * 4 + 1] = int(
-                    b[i * 4 + j * w * 4 + 1] * b[i * 4 + j * w * 4 + 3] / 255
-                )
-                b[i * 4 + j * w * 4 + 2] = int(
-                    b[i * 4 + j * w * 4 + 2] * b[i * 4 + j * w * 4 + 3] / 255
-                )
+                idx = i * 4 + j * w * 4 + res
+                alpha = mem_data[idx + 3]
+                mem_data[idx + 0] = int(mem_data[idx + 0] * alpha / 255)
+                mem_data[idx + 1] = int(mem_data[idx + 1] * alpha / 255)
+                mem_data[idx + 2] = int(mem_data[idx + 2] * alpha / 255)
         return r
 
 

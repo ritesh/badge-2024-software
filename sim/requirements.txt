@@ -1,5 +1,4 @@
 pygame
 requests
 pymad
-wasmer
-wasmer-compiler-cranelift
+wasmtime
