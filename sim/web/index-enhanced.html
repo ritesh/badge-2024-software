@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tildagon Badge Simulator - Enhanced (pygame.js)</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #0f0;
+            font-size: 14px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        #container {
+            position: relative;
+            border: 2px solid #333;
+            box-shadow: 0 0 20px rgba(0, 255, 200, 0.3);
+            background: #000;
+        }
+
+        canvas {
+            display: block;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        #info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 5px;
+            max-width: 733px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #status {
+            color: #0f0;
+            margin-bottom: 10px;
+        }
+
+        .error {
+            color: #f00;
+        }
+
+        .controls {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #444;
+        }
+
+        .key {
+            display: inline-block;
+            padding: 3px 8px;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 3px;
+            margin: 2px;
+            font-size: 12px;
+        }
+
+        .feature-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            background: #2a5;
+            color: #fff;
+            border-radius: 3px;
+            font-size: 11px;
+            margin: 2px;
+        }
+
+        .feature-badge.warning {
+            background: #f80;
+        }
+
+        .features {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #444;
+            font-size: 12px;
+        }
+
+        .note {
+            background: #333;
+            padding: 10px;
+            margin-top: 10px;
+            border-left: 3px solid #0af;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎮 Tildagon Badge Simulator - Enhanced</h1>
+    <div class="subtitle">Using pygame.js Compatibility Layer</div>
+
+    <div id="container">
+        <!-- Canvas will be created by pygame.display.set_mode() -->
+    </div>
+
+    <div id="info">
+        <div id="status">⏳ Initializing pygame.js...</div>
+
+        <div class="features">
+            <strong>Pygame Features Implemented:</strong><br>
+            <span class="feature-badge">✓ pygame.display</span>
+            <span class="feature-badge">✓ pygame.Surface</span>
+            <span class="feature-badge">✓ pygame.draw</span>
+            <span class="feature-badge">✓ pygame.event</span>
+            <span class="feature-badge">✓ pygame.image</span>
+            <span class="feature-badge">✓ Buffer access</span>
+            <span class="feature-badge warning">⚠ pygame.mixer (stub)</span>
+        </div>
+
+        <div class="controls">
+            <strong>Controls:</strong><br>
+            Buttons:
+            <span class="key">A</span> Left Jog Left |
+            <span class="key">B</span> Left Press |
+            <span class="key">C</span> Left Jog Right |
+            <span class="key">D</span> Right Jog Left |
+            <span class="key">E</span> Right Press |
+            <span class="key">F</span> Right Jog Right
+            <br>
+            Click on circular button markers to interact with mouse.
+        </div>
+
+        <div class="note">
+            <strong>📝 Note:</strong> This version uses a pygame API compatibility layer
+            (<code>pygame.js</code>) that maps pygame calls to HTML5 Canvas/Web APIs.
+            This demonstrates how pygame-based Python code can be ported to run in browsers
+            with minimal modifications.
+            <br><br>
+            See <code>NON_PORTABLE_FEATURES.md</code> for details on limitations and alternatives.
+        </div>
+    </div>
+
+    <script type="module" src="simulator-enhanced.js"></script>
+</body>
+</html>
