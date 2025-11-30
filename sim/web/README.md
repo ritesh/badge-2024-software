@@ -1,14 +1,25 @@
-# Tildagon Badge Simulator - Web PoC
+# Tildagon Badge Simulator - Web Version
 
-This is a proof-of-concept HTML5 Canvas version of the badge simulator that runs entirely in the browser.
+This is a browser-based version of the badge simulator that runs entirely in the browser, featuring a pygame compatibility layer for easy porting of pygame-based code.
 
 ## Features
 
 ✅ **Runs in browser** - No Python installation needed
 ✅ **Uses existing ctx.wasm** - Same rendering engine as desktop simulator
+✅ **pygame.js compatibility layer** - Maps pygame API to HTML5 Canvas/Web APIs
 ✅ **Interactive controls** - Mouse and keyboard input
 ✅ **LED animations** - Visual feedback when buttons are pressed
+✅ **Surface compositing** - Multiple canvas layers with blitting
+✅ **Buffer manipulation** - ImageData API for framebuffer access
 ✅ **Responsive** - Works on desktop and tablets
+
+## Available Versions
+
+### 1. Basic PoC (`index.html`)
+Direct implementation using Canvas APIs. Demonstrates core concepts.
+
+### 2. Enhanced Version (`index-enhanced.html`) ⭐ **Recommended**
+Uses `pygame.js` compatibility layer. Closer to desktop simulator architecture.
 
 ## How It Works
 
@@ -19,19 +30,27 @@ This is a proof-of-concept HTML5 Canvas version of the badge simulator that runs
 
 ## Running the Simulator
 
-### Option 1: Simple HTTP Server (Python)
+### Option 1: Development Server (Recommended)
 
 From the `sim/web` directory:
+
+```bash
+./serve.py
+# or
+python3 serve.py
+```
+
+Then open:
+- **Enhanced version**: http://localhost:8000/index-enhanced.html ⭐
+- **Basic version**: http://localhost:8000/
+
+### Option 2: Simple HTTP Server
 
 ```bash
 python3 -m http.server 8000
 ```
 
-Then open: http://localhost:8000
-
-### Option 2: Any HTTP Server
-
-You can use any HTTP server. Examples:
+### Option 3: Any HTTP Server
 
 ```bash
 # Node.js
@@ -74,28 +93,142 @@ The JavaScript code:
 4. Calls ctx functions to render graphics
 5. Reads framebuffer and displays on canvas
 
+## File Structure
+
+```
+web/
+├── index.html                    # Basic PoC (direct Canvas API)
+├── index-enhanced.html           # Enhanced version (pygame.js)
+├── simulator.js                  # Basic PoC implementation
+├── simulator-enhanced.js         # Enhanced simulator using pygame.js
+├── pygame.js                     # Pygame compatibility layer ⭐
+├── serve.py                      # Development server
+├── README.md                     # This file
+├── PYGAME_API_MAPPING.md        # Complete API reference
+└── NON_PORTABLE_FEATURES.md     # Limitations & alternatives ⭐
+```
+
+## Pygame Compatibility Layer
+
+The `pygame.js` module provides a subset of pygame's API:
+
+### Implemented Features ✅
+
+| Module | Features | Coverage |
+|--------|----------|----------|
+| `pygame.display` | set_mode, flip | 100% |
+| `pygame.Surface` | fill, blit, get_buffer | 95% |
+| `pygame.draw` | circle, rect, line | 80% |
+| `pygame.event` | get, post, Event | 90% |
+| `pygame.image` | load, save | 85% |
+| `pygame.Color` | RGB, RGBA | 100% |
+| Event types | MOUSEMOTION, KEYDOWN, etc. | 100% |
+| Key constants | K_a - K_z, arrows, etc. | 90% |
+
+### Non-Portable Features ⚠️
+
+| Feature | Status | Alternative |
+|---------|--------|-------------|
+| `pygame.mixer` | ❌ Stub only | Web Audio API (see docs) |
+| File I/O | ❌ Not available | IndexedDB (see docs) |
+| Threading | ❌ Not available | Web Workers (see docs) |
+| System calls | ❌ Sandboxed | Browser APIs (see docs) |
+
+**See `NON_PORTABLE_FEATURES.md` for complete details and alternatives.**
+
 ## Current Limitations
 
-This PoC demonstrates the concept but has limitations:
+The web version has some limitations compared to desktop:
 
-- ❌ No Python app execution yet (would need Pyodide)
-- ❌ No audio support
-- ❌ No file system emulation
-- ❌ Simplified button mapping
-- ❌ No IMU/accelerometer simulation
-- ⚠️ Basic WASI implementation (minimal stdio)
+- ❌ No Python app execution (would need Pyodide integration)
+- ⚠️ Audio uses Web Audio API instead of pygame.mixer
+- ⚠️ File system uses IndexedDB instead of real files
+- ❌ No IMU/accelerometer simulation yet
+- ⚠️ Threading uses Web Workers (different model)
+
+## Using pygame.js in Your Code
+
+The compatibility layer allows pygame-style code to run in browsers:
+
+```javascript
+// Initialize pygame
+pygame.init();
+
+// Create display
+const screen = pygame.display.set_mode({
+    size: [800, 600],
+    flags: pygame.SRCALPHA
+});
+
+// Create surface
+const surface = new Surface(200, 200);
+surface.fill([255, 0, 0, 128]);
+
+// Draw primitives
+pygame.draw.circle(surface, [0, 255, 0], [100, 100], 50);
+pygame.draw.rect(screen, [0, 0, 255], [10, 10, 100, 100]);
+
+// Handle events
+const events = pygame.event.get();
+for (const event of events) {
+    if (event.type === pygame.KEYDOWN) {
+        console.log('Key pressed:', event.key);
+    }
+}
+
+// Blit and display
+screen.blit(surface, [50, 50]);
+pygame.display.flip();
+```
+
+See `simulator-enhanced.js` for a complete working example.
+
+## Porting Python Code
+
+To port Python pygame code:
+
+1. **Use `pygame.js`**: Include the compatibility layer
+2. **Convert to JavaScript**: Standard Python → JS translation
+3. **Handle async operations**: File/image loading is async
+4. **Replace incompatible features**: See `NON_PORTABLE_FEATURES.md`
+
+**Example conversion:**
+
+Python:
+```python
+# pygame code
+screen = pygame.display.set_mode((800, 600))
+screen.fill((0, 0, 0))
+pygame.draw.circle(screen, (255, 0, 0), (400, 300), 50)
+pygame.display.flip()
+```
+
+JavaScript (using pygame.js):
+```javascript
+// Equivalent in pygame.js
+const screen = pygame.display.set_mode({ size: [800, 600] });
+screen.fill([0, 0, 0]);
+pygame.draw.circle(screen, [255, 0, 0], [400, 300], 50);
+pygame.display.flip();
+```
 
 ## Next Steps
 
-To make this production-ready:
+### Immediate Improvements
 
-1. **Add Pyodide** - Run actual badge Python apps
-2. **Implement full WASI** - Better stdio/filesystem support
-3. **Add app loader** - Load/run badge apps from `/apps`
-4. **Touch support** - Better mobile experience
-5. **Performance tuning** - Optimize rendering loops
-6. **Audio** - Web Audio API integration
-7. **State persistence** - localStorage for settings
+1. ✅ **pygame.js compatibility layer** - Done!
+2. ✅ **Documentation** - Complete API mapping done
+3. 🔄 **Audio support** - Implement Web Audio manager
+4. 🔄 **Virtual file system** - IndexedDB wrapper
+
+### Long-term Goals
+
+1. **Add Pyodide** - Run actual Python badge apps in browser
+2. **Full WASI** - Better stdio/filesystem support
+3. **App loader** - Load/run badge apps from virtual `/apps`
+4. **Touch support** - Mobile-friendly controls
+5. **Performance** - Optimize rendering pipeline
+6. **PWA** - Install as standalone app
 
 ## Comparison to Desktop Simulator
 
