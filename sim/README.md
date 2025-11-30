@@ -22,12 +22,27 @@ pipenv install
 Running
 ---
 
+### Desktop Simulator (Python)
+
 From the main firmware code:
 
 ```
 cd sim
 pipenv run python run.py
 ```
+
+### Web Simulator (Browser)
+
+A proof-of-concept HTML5 Canvas version is available that runs entirely in the browser:
+
+```
+cd sim/web
+python3 serve.py
+```
+
+Then open http://localhost:8000 in your browser.
+
+See `web/README.md` for more details on the web version.
 
 Known Issues
 ---

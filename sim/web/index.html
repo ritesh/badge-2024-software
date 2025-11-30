@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tildagon Badge Simulator - Web</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #container {
+            position: relative;
+            width: 733px;
+            height: 733px;
+            background: #000;
+            border: 2px solid #333;
+            box-shadow: 0 0 20px rgba(0, 255, 200, 0.3);
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 5px;
+            max-width: 733px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #status {
+            color: #0f0;
+            margin-bottom: 10px;
+        }
+
+        .error {
+            color: #f00;
+        }
+
+        .controls {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #444;
+        }
+
+        .key {
+            display: inline-block;
+            padding: 3px 8px;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 3px;
+            margin: 2px;
+            font-size: 12px;
+        }
+
+        h1 {
+            margin: 0 0 20px 0;
+            font-size: 24px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎮 Tildagon Badge Simulator - Web PoC</h1>
+
+    <div id="container">
+        <!-- Background layer -->
+        <canvas id="bg-canvas" width="733" height="733"></canvas>
+        <!-- LED layer -->
+        <canvas id="led-canvas" width="733" height="733"></canvas>
+        <!-- OLED display layer -->
+        <canvas id="oled-canvas" width="240" height="240"
+                style="left: 250px; top: 246px;"></canvas>
+        <!-- Button overlay layer -->
+        <canvas id="button-canvas" width="733" height="733"></canvas>
+    </div>
+
+    <div id="info">
+        <div id="status">⏳ Loading WASM module...</div>
+        <div class="controls">
+            <strong>Controls:</strong><br>
+            Buttons:
+            <span class="key">A</span> Left Jog Left |
+            <span class="key">B</span> Left Press |
+            <span class="key">C</span> Left Jog Right |
+            <span class="key">D</span> Right Jog Left |
+            <span class="key">E</span> Right Press |
+            <span class="key">F</span> Right Jog Right
+            <br>
+            Click on circular button markers to interact with mouse.
+        </div>
+    </div>
+
+    <script type="module" src="simulator.js"></script>
+</body>
+</html>
